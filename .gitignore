@@ -1,0 +1,12 @@
+# Exports Auth0 locaux
+auth0-export/
+local/
+*.log
+
+# Secrets
+.env
+config/*.local.json
+
+# Node
+node_modules/
+package-lock.json

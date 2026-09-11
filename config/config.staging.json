@@ -1,0 +1,19 @@
+{
+  "AUTH0_DOMAIN": "axa-sa-b2b-stg.eu.auth0.com",
+  "AUTH0_ALLOW_DELETE": false,
+  "AUTH0_EXPORT_IDENTIFIERS": true,
+  "AUTH0_EXCLUDED": [
+    "admins",
+    "customDomains",
+    "logStreams",
+    "emailProvider"
+  ],
+  "AUTH0_EXCLUDED_CLIENTS": [],
+  "AUTH0_KEYWORD_REPLACE_MAPPINGS": {
+    "ENV": "staging",
+    "DOMAIN": "staging.example.com",
+    "CALLBACK_URL": "https://app.staging.example.com/callback",
+    "LOGOUT_URL": "https://app.staging.example.com/logout",
+    "WEB_ORIGIN": "https://app.staging.example.com"
+  }
+}
