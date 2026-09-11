@@ -68,6 +68,17 @@ jobs:
           path: ${{ env.EXPORT_DIR }}/
           retention-days: 1
 
+      - name: Debug credentials (masked)
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_STAGING_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_STAGING_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_STAGING_CLIENT_SECRET }}
+        run: |
+          echo "Domain STAGING length: ${#AUTH0_DOMAIN}"
+          echo "Client STAGING ID length: ${#AUTH0_CLIENT_ID}"
+          echo "Client STAGING Secret length: ${#AUTH0_CLIENT_SECRET}"
+          echo "Domain starts with: ${AUTH0_DOMAIN:0:5}..."
+
   # ----------------------------------------------------------
   # Job 2 : Import vers STAGING (avec validation manuelle)
   # ----------------------------------------------------------
