@@ -1,0 +1,160 @@
+# ============================================================
+# Workflow Auth0 Config Delivery : DEV → STAGING
+# ============================================================
+# Ce workflow :
+#   1. Exporte la configuration complète du tenant Auth0 DEV
+#   2. Nettoie les champs read-only non acceptés à l'import
+#   3. Importe la configuration dans le tenant Auth0 STAGING
+#
+# Déclenchement : manuel depuis l'onglet Actions
+# Protection : Environment "staging" + input "confirm_import"
+# Node.js : 24 (LTS)
+# ============================================================
+
+name: Auth0 Config Delivery (DEV → STAGING)
+
+on:
+  # Déclenchement manuel depuis l'onglet Actions
+  workflow_dispatch:
+    inputs:
+      confirm_import:
+        description: "Confirmer l'import vers STAGING (yes/no)"
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - "yes"
+  # (Optionnel) Déclenchement automatique sur push main
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'config/**'
+
+env:
+  NODE_VERSION: "24"
+  EXPORT_DIR: "auth0-export"
+
+jobs:
+  # ----------------------------------------------------------
+  # Job 1 : Export des configs depuis DEV
+  # ----------------------------------------------------------
+  export-dev:
+    name: "Export configs from DEV"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Display Node.js version
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+
+      - name: Install Auth0 Deploy CLI
+        run: npm install -g auth0-deploy-cli
+
+      - name: Export configs from DEV
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DEV_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_DEV_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_DEV_CLIENT_SECRET }}
+          AUTH0_ALLOW_DELETE: "false"
+        run: |
+          echo "🔽 Export des configs depuis DEV..."
+          a0deploy export \
+            --config_file=config/config.dev.json \
+            --format=yaml \
+            --output_folder=${EXPORT_DIR}
+          echo "✅ Export terminé"
+          ls -la ${EXPORT_DIR}/
+
+      - name: Upload export as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth0-export
+          path: ${{ env.EXPORT_DIR }}/
+          retention-days: 1
+
+  # ----------------------------------------------------------
+  # Job 2 : Import vers STAGING (avec validation manuelle)
+  # ----------------------------------------------------------
+  import-staging:
+    name: "Import configs to STAGING"
+    runs-on: ubuntu-latest
+    needs: export-dev
+    # 👇 Protections : validation manuelle + confirmation input
+    environment:
+      name: staging
+    if: ${{ github.event.inputs.confirm_import == 'yes' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download export artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth0-export
+          path: ${{ env.EXPORT_DIR }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Display Node.js version
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+
+      - name: Install Auth0 Deploy CLI
+        run: npm install -g auth0-deploy-cli
+
+      # 👇 Debug : vérifier que les secrets STAGING sont bien injectés
+      - name: Debug STAGING credentials (masked)
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_STAGING_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_STAGING_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_STAGING_CLIENT_SECRET }}
+        run: |
+          echo "Domain STAGING length: ${#AUTH0_DOMAIN}"
+          echo "Client STAGING ID length: ${#AUTH0_CLIENT_ID}"
+          echo "Client STAGING Secret length: ${#AUTH0_CLIENT_SECRET}"
+          echo "Domain starts with: ${AUTH0_DOMAIN:0:5}..."
+
+      # 👇 Nettoyage des champs read-only non acceptés à l'import
+      - name: Clean tenant.yaml (remove read-only fields)
+        run: |
+          echo "🧹 Nettoyage des champs non autorisés..."
+          sed -i '/created_at:/d'   ${EXPORT_DIR}/tenant.yaml
+          sed -i '/updated_at:/d'   ${EXPORT_DIR}/tenant.yaml
+          sed -i '/last_ip:/d'      ${EXPORT_DIR}/tenant.yaml
+          echo "✅ Nettoyage terminé"
+          echo "Vérification :"
+          if grep -q "created_at\|updated_at\|last_ip" ${EXPORT_DIR}/tenant.yaml; then
+            echo "⚠️ Il reste des occurrences :"
+            grep -n "created_at\|updated_at\|last_ip" ${EXPORT_DIR}/tenant.yaml
+            exit 1
+          else
+            echo "✅ Aucune occurrence restante"
+          fi
+
+      # 👇 Import final vers STAGING
+      - name: Import configs to STAGING
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_STAGING_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_STAGING_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_STAGING_CLIENT_SECRET }}
+          AUTH0_ALLOW_DELETE: "false"
+        run: |
+          echo "🔼 Import des configs vers STAGING..."
+          a0deploy import \
+            --config_file=config/config.staging.json \
+            --input_file=${EXPORT_DIR}/tenant.yaml \
+            --dry-run
+          echo "✅ Import terminé avec succès"
