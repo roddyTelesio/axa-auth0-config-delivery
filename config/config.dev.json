@@ -8,5 +8,7 @@
     "logStreams",
     "emailProvider"
   ],
-  "AUTH0_EXCLUDED_CLIENTS": []
+  "AUTH0_EXCLUDED_CLIENTS": [
+    "ofp9KKS7sDU8MaDwHi97Avn9YxyRSnpM"
+  ]
 }
