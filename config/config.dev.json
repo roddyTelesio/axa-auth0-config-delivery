@@ -1,7 +1,7 @@
 {
   "AUTH0_DOMAIN": "axa-sa-b2b-dev.eu.auth0.com",
   "AUTH0_ALLOW_DELETE": false,
-  "AUTH0_EXPORT_IDENTIFIERS": true,
+  "AUTH0_EXPORT_IDENTIFIERS": false,
   "AUTH0_EXCLUDED": [
     "admins",
     "customDomains",
