@@ -8,6 +8,13 @@
     "logStreams",
     "emailProvider"
   ],
+  "AUTH0_EXCLUDED_RESOURCE_SERVERS": [
+     "https://axa-sa-b2b-dev.eu.auth0.com/api/v2/",
+     "https://axa-sa-b2b-dev.eu.auth0.com/oauth/token",
+     "https://axa-sa-b2b-dev.eu.auth0.com/api/v2/users-by-email?email=",
+     "https://axa-sa-b2b-dev.eu.auth0.com/api/v2/users",
+     "https://axa-sa-b2b-dev.eu.auth0.com//dbconnections/change_password"
+  ],
   "AUTH0_EXCLUDED_CLIENTS": [
     "ofp9KKS7sDU8MaDwHi97Avn9YxyRSnpM"
   ]
