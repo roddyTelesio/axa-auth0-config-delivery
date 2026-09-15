@@ -156,5 +156,4 @@ jobs:
           a0deploy import \
             --config_file=config/config.staging.json \
             --input_file=${EXPORT_DIR}/tenant.yaml \
-            --dry-run
           echo "✅ Import terminé avec succès"
